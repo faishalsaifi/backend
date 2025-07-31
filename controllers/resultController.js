@@ -77,5 +77,23 @@ exports.updateResult = async (req, res) => {
   }
 };
 
+exports.getDashboardStats = async (req, res) => {
+  try {
+    const [students] = await db.query('SELECT COUNT(DISTINCT enrollment_no) AS totalStudents FROM results');
+    const [subjects] = await db.query('SELECT COUNT(DISTINCT subject) AS totalSubjects FROM results');
+    const [marks] = await db.query('SELECT COUNT(*) AS marksEntered FROM results');
+    const [results] = await db.query('SELECT COUNT(DISTINCT enrollment_no) AS resultsGenerated FROM results');
+
+    res.json({
+      totalStudents: students[0].totalStudents,
+      totalSubjects: subjects[0].totalSubjects,
+      marksEntered: marks[0].marksEntered,
+      resultsGenerated: results[0].resultsGenerated
+    });
+  } catch (err) {
+    console.error("Dashboard stats error:", err);
+    res.status(500).json({ message: "Error fetching dashboard stats" });
+  }
+};
 
 

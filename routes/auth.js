@@ -13,5 +13,7 @@ router.get('/protected', authenticateToken, (req, res) => {
 });
 
 router.get('/me', authenticateToken, authController.getUser);
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/verify-otp', authController.verifyOtpAndReset);
 
 module.exports = router;

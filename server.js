@@ -16,10 +16,15 @@ const resetRoute = require('./routes/reset');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/userRoutes');
 const resultRoutes = require('./routes/resultRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+
 app.use('/api/results', resultRoutes);
 app.use('/api/users', userRoutes);
 app.use('/', resetRoute); // e.g., /forgot-password, /reset
 app.use('/api/auth', authRoutes); // e.g., /api/auth/login, /api/auth/signup
+app.use('/api/dashboard',dashboardRoutes);
+app.use('./api/auth',require('./routes/auth'))
+
 
 
 // app.post('/api/auth/signup', (req, res) => {
