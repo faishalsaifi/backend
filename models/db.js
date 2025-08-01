@@ -1,6 +1,6 @@
 // models/db.js
 const mysql = require('mysql2/promise');
-
+require('dotenv').config();
 // ✅ Create a pool (recommended for scalability)
 const db = mysql.createPool({
   host: process.env.DB_HOST,
@@ -8,6 +8,7 @@ const db = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
+
 });
 
 module.exports = db;

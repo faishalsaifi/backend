@@ -8,7 +8,12 @@ const cors = require('cors');
 const db = require('./models/db');
 
 // Middleware to parse form data and JSON
-app.use(cors());
+app.use(cors(
+  {
+    origin:'*',
+    credentials:true
+  }
+));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
