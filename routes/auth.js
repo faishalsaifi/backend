@@ -6,7 +6,8 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 const bcrypt = require('bcryptjs');
 const db = require('../models/db'); // adjust if db.js is in another location
 
-router.post('/signup', authController.signup);
+router.post('/send-otp-signup', authController.sendOtpForSignup);
+router.post('/verify-otp-signup', authController.verifyOtpSignup);
 router.post('/login', authController.login);
 router.get('/protected', authenticateToken, (req, res) => {
   res.json({ message: `Welcome ${req.user.email}, this is a protected route!` });

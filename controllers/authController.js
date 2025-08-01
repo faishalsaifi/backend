@@ -5,52 +5,76 @@ const jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_SECRET;
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
+const signupOtpStore = new Map(); // email -> { otp, name }
 
-exports.signup = async (req, res) => {
+exports.sendOtpForSignup = async (req, res) => {
+  const { name, email } = req.body;
+
+  const [existing] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+  if (existing.length > 0) {
+    return res.status(400).json({ message: "Email already registered" });
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  signupOtpStore.set(email, { otp, name });
+
   try {
-    console.log("🔥 Incoming signup request with body:", req.body);
-
-    const { name, email, password } = req.body;
-    if (!name || !email || !password) {
-      console.log("❌ Missing required fields");
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    const hashed = await bcrypt.hash(password, 10);
-    console.log("🔐 Password hashed");
-
-    const [existing] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (existing.length > 0) {
-      console.log("⚠️ Email already exists");
-      return res.status(400).json({ message: 'Email already registered' });
-    }
-
-    const [result] = await db.query(
-      'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
-      [name, email, hashed]
-    );
-
-    console.log("✅ User inserted:", result);
-
-    // 🔑 Generate token
-    const token = jwt.sign({ id: result.insertId }, secretKey);
-
-    res.status(201).json({
-      message: 'User registered successfully',
-      token,
-      user: {
-        id: result.insertId,
-        name,
-        email
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
       }
     });
 
-  } catch (err) {
-    console.error("❌ Signup error:", err);
-    res.status(500).json({ message: 'Something went wrong' });
-  }
-};
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'OTP for Signup',
+      html: `<h2>Your Signup OTP: ${otp}</h2><p>This OTP is valid for 10 minutes.</p>`
+    };
 
+    await transporter.sendMail(mailOptions);
+    res.json({ message: "OTP sent" });
+  } catch (err) {
+    console.error("Error sending signup OTP:", err);
+    res.status(500).json({ message: "Failed to send OTP" });
+  }};
+  exports.sendOtpForSignup = async (req, res) => {
+  const { name, email } = req.body;
+
+  const [existing] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+  if (existing.length > 0) {
+    return res.status(400).json({ message: "Email already registered" });
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  signupOtpStore.set(email, { otp, name });
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'OTP for Signup',
+      html: `<h2>Your Signup OTP: ${otp}</h2><p>This OTP is valid for 10 minutes.</p>`
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.json({ message: "OTP sent" });
+  } catch (err) {
+    console.error("Error sending signup OTP:", err);
+    res.status(500).json({ message: "Failed to send OTP" });
+  }};
 
 // Login handler
 
