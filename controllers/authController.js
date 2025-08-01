@@ -109,6 +109,8 @@ exports.forgotPassword = async (req, res) => {
 
     // ✅ Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore.set(email,otp);
+    setTimeout(()=>otpStore.delete(email),10*60*1000)
 
     // 🚀 Setup transporter
     const transporter = nodemailer.createTransport({
