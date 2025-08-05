@@ -77,6 +77,22 @@ exports.updateResult = async (req, res) => {
   }
 };
 
+exports.deleteResult = async (req, res) => {
+  const resultId = req.params.id;
+  try {
+    const [result] = await db.query("DELETE FROM results WHERE id = ?", [resultId]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Result not found" });
+    }
+
+    res.json({ message: "Result deleted successfully" });
+  } catch (err) {
+    console.error("Delete error:", err);
+    res.status(500).json({ message: "Failed to delete result" });
+  }
+};
+
 exports.getDashboardStats = async (req, res) => {
   try {
     const [students] = await db.query('SELECT COUNT(DISTINCT enrollment_no) AS totalStudents FROM results');

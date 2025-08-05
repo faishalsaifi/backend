@@ -9,8 +9,8 @@ router.get('/all', authenticateToken, resultController.getAllResults);
 router.get('/by-enroll/:enrollNo', authenticateToken, resultController.getResultByEnroll); // 👈 safer route
 router.get('/:id', authenticateToken, resultController.getResultById);
 router.put('/update/:id', authenticateToken, resultController.updateResult);
+router.delete('/delete/:id',authenticateToken,resultController.deleteResult);
 
 router.get('/public/:enrollNo', resultController.getResultByEnroll);
-
 
 module.exports = router;
