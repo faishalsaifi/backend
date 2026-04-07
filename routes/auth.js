@@ -12,7 +12,14 @@ router.post('/login', authController.login);
 router.get('/protected', authenticateToken, (req, res) => {
   res.json({ message: `Welcome ${req.user.email}, this is a protected route!` });
 });
-
+app.get('/test-db', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT 1');
+    res.json({ status: '✅ DB Connected!' });
+  } catch (err) {
+    res.json({ status: '❌ Failed', error: err.message, code: err.code });
+  }
+});
 router.get('/me', authenticateToken, authController.getUser);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/verify-otp', authController.verifyOtpAndReset);
