@@ -29,7 +29,15 @@ app.use('/', resetRoute); // e.g., /forgot-password, /reset
 app.use('/api/auth', authRoutes); // e.g., /api/auth/login, /api/auth/signup
 app.use('/api/dashboard',dashboardRoutes);
 app.use('./api/auth',require('./routes/auth'))
-
+// In server.js, after your existing routes
+app.get('/test-db', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT 1');
+    res.json({ status: '✅ DB Connected!' });
+  } catch (err) {
+    res.json({ status: '❌ Failed', error: err.message, code: err.code });
+  }
+});
 
 
 // app.post('/api/auth/signup', (req, res) => {
