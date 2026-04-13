@@ -12,5 +12,5 @@ router.put('/update/:id', authenticateToken, resultController.updateResult);
 router.delete('/delete/:id',authenticateToken,resultController.deleteResult);
 
 router.get('/public/:enrollNo', resultController.getResultByEnroll);
-
+router.get('/my-results', authenticateToken, resultController.getMyResults);
 module.exports = router;

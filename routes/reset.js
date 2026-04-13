@@ -7,7 +7,7 @@ router.post('/forgot-password', async (req, res) => {
   const { email } = req.body; // email entered in form
 
   // Generate a reset link (this can be dynamic in future)
-  const resetLink = `http://localhost:3000/reset-password?email=${email}`;
+  const resetLink = `http://localhost:5000/reset-password?email=${email}`;
 
   // Setup Nodemailer transporter (using Gmail)
   const transporter = nodemailer.createTransport({

@@ -8,16 +8,18 @@ const nodemailer = require("nodemailer");
 const signupOtpStore = new Map(); // email -> { otp, name }
 
 exports.sendOtpForSignup = async (req, res) => {
-  const { name, email } = req.body;
+ const { name, email, role } = req.body;
 
-  const [existing] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+  const [existing] = await db.query('SELECT * FROM user WHERE email = ?', [email]);
   if (existing.length > 0) {
     return res.status(400).json({ message: "Email already registered" });
   }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  signupOtpStore.set(email, { otp, name });
+ 
+
+signupOtpStore.set(email, { otp, name, role });
 
   try {
     const transporter = nodemailer.createTransport({
@@ -42,9 +44,16 @@ exports.sendOtpForSignup = async (req, res) => {
     res.status(500).json({ message: "Failed to send OTP" });
   }};
   exports.verifyOtpSignup = async (req, res) => {
-  const { name, email, password, otp } = req.body;
+  const {email, password, otp } = req.body;
 
   const stored = signupOtpStore.get(email);
+
+if (!stored || stored.otp !== otp) {
+  return res.status(400).json({ message: "Invalid or expired OTP" });
+}
+
+const { name, role } = stored;
+  
   if (!stored || stored.otp !== otp) {
     return res.status(400).json({ message: "Invalid or expired OTP" });
   }
@@ -53,9 +62,9 @@ exports.sendOtpForSignup = async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
 
     const [result] = await db.query(
-      "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-      [name, email, hashed]
-    );
+  "INSERT INTO user (name, email, password, role) VALUES (?, ?, ?, ?)",
+  [name, email, hashed, role || "Student"]
+);
 
     const token = jwt.sign({ id: result.insertId }, process.env.JWT_SECRET);
 
@@ -64,7 +73,7 @@ exports.sendOtpForSignup = async (req, res) => {
     res.json({
       message: "Signup successful",
       token,
-      user: { id: result.insertId, name, email }
+      user: { id: result.insertId, name, email, role }
     });
   } catch (err) {
     console.error("Signup verification failed:", err);
@@ -77,7 +86,7 @@ exports.sendOtpForSignup = async (req, res) => {
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
-    const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [users] = await db.query('SELECT * FROM user WHERE email = ?', [email]);
      console.log('DB results:', users);
     const user = users[0];
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
@@ -85,13 +94,14 @@ exports.login = async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user.id },secretKey);
-    res.json({
+    const token = jwt.sign({ id: user.user_id },secretKey);
+  res.json({
   token,
   user: {
-    id: user.id,
+    id: user.user_id,  
     name: user.name,
-    email: user.email
+    email: user.email,
+    role: user.role
   }
 });
 
@@ -105,7 +115,7 @@ exports.login = async (req, res) => {
 exports.getUser = async (req, res) => {
   const userId = req.user.id;
   try {
-    const [users] = await db.query('SELECT id, name, email FROM users WHERE id = ?', [userId]);
+    const [users] = await db.query('SELECT user_id, name, email, role FROM users WHERE user_id = ?', [userId]);
     res.json(users[0]);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch user' });
@@ -122,7 +132,7 @@ exports.forgotPassword = async (req, res) => {
     console.log("📧 Forgot password request for:", email);
 
     // 🔍 Check if email exists
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [rows] = await db.query('SELECT * FROM user WHERE email = ?', [email]);
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Email not found. Please sign up first.' });
     }
@@ -172,7 +182,7 @@ exports.verifyOtpAndReset = async (req, res) => {
 
   try {
     const hashed = await bcrypt.hash(newPassword, 10);
-    await db.query("UPDATE users SET password = ? WHERE email = ?", [hashed, email]);
+    await db.query("UPDATE user SET password = ? WHERE email = ?", [hashed, email]);
     otpStore.delete(email);
 
     res.json({ message: "Password reset successful" });

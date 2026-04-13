@@ -5,10 +5,10 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 
 router.get('/stats', authenticateToken, async (req, res) => {
   try {
-    const [students] = await db.query('SELECT COUNT(DISTINCT enrollment_no) AS totalStudents FROM results');
-    const [subjects] = await db.query('SELECT COUNT(DISTINCT subject) AS totalSubjects FROM results');
-    const [marks] = await db.query('SELECT COUNT(*) AS marksEntered FROM results WHERE marks IS NOT NULL');
-    const [results] = await db.query('SELECT COUNT(DISTINCT enrollment_no) AS resultsGenerated FROM results');
+    const [students] = await db.query('SELECT COUNT(DISTINCT enrollment_no) AS totalStudents FROM result');
+    const [subjects] = await db.query('SELECT COUNT(DISTINCT subject) AS totalSubjects FROM result');
+    const [marks] = await db.query('SELECT COUNT(*) AS marksEntered FROM result WHERE marks IS NOT NULL');
+    const [results] = await db.query('SELECT COUNT(DISTINCT enrollment_no) AS resultsGenerated FROM result');
 
     res.json({
       totalStudents: students[0].totalStudents,

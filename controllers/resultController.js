@@ -1,26 +1,65 @@
 const db = require('../models/db');
-
+// 🔥 ADD THIS HERE
+function calculateGrade(marks) {
+ if (marks >= 75) return "A";
+  if (marks >= 50) return "B";
+  if (marks >= 40) return "C";
+  return "F";
+}
 exports.addResult = async (req, res) => {
-  const {
-    student_name, enrollment_no, email, gender,
-    course, semester, subject, marks, status
-  } = req.body;
+  const { email, enrollment_no, course_id, subject, marks, semester } = req.body;
 
   try {
-    await db.query(
-      'INSERT INTO results (student_name, enrollment_no, email, gender, course, semester, subject, marks, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [student_name, enrollment_no, email, gender, course, semester, subject, marks, status]
+    // ✅ Step 1: Check if user exists using email
+    const [userRows] = await db.query(
+      "SELECT user_id, name FROM user WHERE email = ?",
+      [email]
     );
-    res.status(201).json({ message: 'Result added successfully' });
+
+    if (userRows.length === 0) {
+      return res.status(400).json({ message: "Invalid Email (Student not registered)" });
+    }
+
+    const user = userRows[0];
+    const finalGrade = calculateGrade(marks);
+
+    // ✅ Step 2: Insert result
+    await db.query(
+      `INSERT INTO result 
+      (user_id, enrollment_no, course_id, subject, marks, grade, semester)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [user.user_id, enrollment_no, course_id, subject, marks, finalGrade, semester]
+    );
+
+    res.json({ message: "Result added successfully", studentName: user.name });
+    
+
   } catch (err) {
-    console.error('Add Result Error:', err);
-    res.status(500).json({ message: 'Error adding result' });
+    if(err.code === 'ER_DUP_ENTRY'){
+      return res.status(400).json({
+        message: "Result already exists for this subject"
+      })
+    }
+    console.error("Add Result Error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 exports.getAllResults = async (req, res) => {
   try {
-    const [results] = await db.query('SELECT * FROM results');
-    res.json(results);
+    const [result] = await db.query(`
+      SELECT 
+        result.result_id,
+        result.enrollment_no,
+        result.subject,
+        result.marks,
+        result.grade,
+        user.name
+      FROM result
+      JOIN user ON result.user_id = user.user_id
+    `);
+
+    res.json(result);
+
   } catch (err) {
     console.error('Error fetching results:', err);
     res.status(500).json({ error: 'Failed to fetch results' });
@@ -30,7 +69,7 @@ exports.getResultById = async (req, res) => {
   const resultId = req.params.id;
 
   try {
-    const [rows] = await db.query('SELECT * FROM results WHERE id = ?', [resultId]);
+    const [rows] = await db.query('SELECT * FROM result WHERE result_id = ?', [resultId]);
 
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Result not found' });
@@ -46,7 +85,7 @@ exports.getResultByEnroll = async (req, res) => {
   const { enrollNo } = req.params;
 
   try {
-    const [rows] = await db.query('SELECT * FROM results WHERE enrollment_no = ?', [enrollNo]);
+    const [rows] = await db.query('SELECT * FROM result WHERE enrollment_no = ?', [enrollNo]);
 
     if (rows.length === 0) {
       return res.status(404).json({ message: 'No result found' });
@@ -58,29 +97,52 @@ exports.getResultByEnroll = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+exports.getMyResults = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const [result] = await db.query(
+      'SELECT * FROM result WHERE user_id = ?',
+      [userId]
+    );
+
+    res.json(result);
+  } catch (err) {
+    console.error("Error fetching my results:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 // controllers/resultController.js
 exports.updateResult = async (req, res) => {
   const resultId = req.params.id;
-  const { marks, status } = req.body;
+  const { marks, subject, course_id, semester } = req.body;
 
   try {
-    const [result] = await db.query('UPDATE results SET marks = ?, status = ? WHERE id = ?', [marks, status, resultId]);
+    // 🔥 auto calculate grade again
+    const finalGrade = calculateGrade(marks);
+
+    const [result] = await db.query(
+      `UPDATE result 
+       SET marks = ?, grade = ?, subject = ?, course_id = ?, semester = ?
+       WHERE result_id = ?`,
+      [marks, finalGrade, subject, course_id, semester, resultId]
+    );
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Result not found" });
     }
 
     res.json({ message: "Result updated successfully" });
+
   } catch (error) {
     console.error("Update error:", error);
     res.status(500).json({ message: "Server error during update" });
   }
 };
-
 exports.deleteResult = async (req, res) => {
   const resultId = req.params.id;
   try {
-    const [result] = await db.query("DELETE FROM results WHERE id = ?", [resultId]);
+    const [result] = await db.query("DELETE FROM result WHERE result_id = ?", [resultId]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Result not found" });
@@ -95,16 +157,16 @@ exports.deleteResult = async (req, res) => {
 
 exports.getDashboardStats = async (req, res) => {
   try {
-    const [students] = await db.query('SELECT COUNT(DISTINCT enrollment_no) AS totalStudents FROM results');
-    const [subjects] = await db.query('SELECT COUNT(DISTINCT subject) AS totalSubjects FROM results');
-    const [marks] = await db.query('SELECT COUNT(*) AS marksEntered FROM results');
-    const [results] = await db.query('SELECT COUNT(DISTINCT enrollment_no) AS resultsGenerated FROM results');
+    const [students] = await db.query('SELECT COUNT(DISTINCT enrollment_no) AS totalStudents FROM result');
+    const [subjects] = await db.query('SELECT COUNT(DISTINCT subject) AS totalSubjects FROM result');
+    const [marks] = await db.query('SELECT COUNT(*) AS marksEntered FROM result');
+    const [result] = await db.query('SELECT COUNT(DISTINCT enrollment_no) AS resultsGenerated FROM result');
 
     res.json({
       totalStudents: students[0].totalStudents,
       totalSubjects: subjects[0].totalSubjects,
       marksEntered: marks[0].marksEntered,
-      resultsGenerated: results[0].resultsGenerated
+      resultsGenerated: result[0].resultsGenerated
     });
   } catch (err) {
     console.error("Dashboard stats error:", err);
