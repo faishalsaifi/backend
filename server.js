@@ -23,12 +23,15 @@ const userRoutes = require('./routes/userRoutes');
 const resultRoutes = require('./routes/resultRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const courseRoutes = require('./routes/courseRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+
 app.use('/api/results', resultRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/users', userRoutes);
 app.use('/', resetRoute); // e.g., /forgot-password, /reset
 app.use('/api/auth', authRoutes); // e.g., /api/auth/login, /api/auth/signup
 app.use('/api/dashboard',dashboardRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // In server.js, after your existing routes
 

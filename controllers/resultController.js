@@ -19,10 +19,22 @@ exports.addResult = async (req, res) => {
     if (userRows.length === 0) {
       return res.status(400).json({ message: "Invalid Email (Student not registered)" });
     }
+// ✅ Check if student already belongs to another course
+const [existing] = await db.query(
+  "SELECT DISTINCT course_id FROM result WHERE enrollment_no = ?",
+  [enrollment_no]
+);
+
+if (existing.length > 0 && existing[0].course_id != course_id) {
+  return res.status(400).json({
+    message: "Student already assigned to another course"
+  });
+}
 
     const user = userRows[0];
     const finalGrade = calculateGrade(marks);
 
+    
     // ✅ Step 2: Insert result
     await db.query(
       `INSERT INTO result 
@@ -69,7 +81,10 @@ exports.getResultById = async (req, res) => {
   const resultId = req.params.id;
 
   try {
-    const [rows] = await db.query('SELECT * FROM result WHERE result_id = ?', [resultId]);
+    const [rows] = await db.query(`SELECT result.*, user.email 
+FROM result
+JOIN user ON result.user_id = user.user_id
+WHERE result_id = ?`, [resultId]);
 
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Result not found' });
@@ -115,9 +130,20 @@ exports.getMyResults = async (req, res) => {
 // controllers/resultController.js
 exports.updateResult = async (req, res) => {
   const resultId = req.params.id;
-  const { marks, subject, course_id, semester } = req.body;
+  const { marks, subject, course_id, semester,enrollment_no } = req.body;
 
   try {
+     //  CHECK COURSE CONFLICT
+    const [existing] = await db.query(
+      "SELECT DISTINCT course_id FROM result WHERE enrollment_no = ? AND result_id != ?",
+      [enrollment_no, resultId]
+    );
+
+    if (existing.length > 0 && existing[0].course_id != course_id) {
+      return res.status(400).json({
+        message: "Student already assigned to another course"
+      });
+    }
     // 🔥 auto calculate grade again
     const finalGrade = calculateGrade(marks);
 
