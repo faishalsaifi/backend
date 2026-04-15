@@ -114,6 +114,7 @@ exports.getResultByEnroll = async (req, res) => {
 };
 exports.getMyResults = async (req, res) => {
   try {
+    console.log("Logged user:", req.user);
     const userId = req.user.id;
 
     const [result] = await db.query(

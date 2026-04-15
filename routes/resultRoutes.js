@@ -5,6 +5,7 @@ const resultController = require('../controllers/resultController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
 router.post('/add', authenticateToken, resultController.addResult);
+router.get('/my-results', authenticateToken, resultController.getMyResults);
 router.get('/all', authenticateToken, resultController.getAllResults);
 router.get('/by-enroll/:enrollNo', authenticateToken, resultController.getResultByEnroll); // 👈 safer route
 router.get('/:id', authenticateToken, resultController.getResultById);
@@ -12,5 +13,4 @@ router.put('/update/:id', authenticateToken, resultController.updateResult);
 router.delete('/delete/:id',authenticateToken,resultController.deleteResult);
 
 router.get('/public/:enrollNo', resultController.getResultByEnroll);
-router.get('/my-results', authenticateToken, resultController.getMyResults);
 module.exports = router;

@@ -32,6 +32,7 @@ app.use('/', resetRoute); // e.g., /forgot-password, /reset
 app.use('/api/auth', authRoutes); // e.g., /api/auth/login, /api/auth/signup
 app.use('/api/dashboard',dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/feedback', require('./routes/feedbackRoutes'));
 
 // In server.js, after your existing routes
 
