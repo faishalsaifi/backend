@@ -42,45 +42,54 @@ signupOtpStore.set(email, { otp, name, role });
   } catch (err) {
     console.error("Error sending signup OTP:", err);
     res.status(500).json({ message: "Failed to send OTP" });
-  }};
-  exports.verifyOtpSignup = async (req, res) => {
-  const {email, password, otp } = req.body;
+  }}; 
+ exports.verifyOtpSignup = async (req, res) => {
+  const { email, password, otp, role, passkey } = req.body;
 
   const stored = signupOtpStore.get(email);
 
-if (!stored || stored.otp !== otp) {
-  return res.status(400).json({ message: "Invalid or expired OTP" });
-}
-
-const { name, role } = stored;
-  
   if (!stored || stored.otp !== otp) {
     return res.status(400).json({ message: "Invalid or expired OTP" });
+  }
+
+  const { name, role: storedRole } = stored;
+
+  // 🔐 PASSKEY CHECK
+  const ADMIN_PASSKEY = "admin123";
+
+  const finalRole = role || storedRole || "Student";
+
+  if (finalRole === "Admin") {
+    if (!passkey || passkey !== ADMIN_PASSKEY) {
+      return res.status(403).json({
+        message: "Invalid admin passkey"
+      });
+    }
   }
 
   try {
     const hashed = await bcrypt.hash(password, 10);
 
     const [result] = await db.query(
-  "INSERT INTO user (name, email, password, role) VALUES (?, ?, ?, ?)",
-  [name, email, hashed, role || "Student"]
-);
+      "INSERT INTO user (name, email, password, role) VALUES (?, ?, ?, ?)",
+      [name, email, hashed, finalRole]
+    );
 
     const token = jwt.sign({ id: result.insertId }, process.env.JWT_SECRET);
 
-    signupOtpStore.delete(email); // clear used OTP
+    signupOtpStore.delete(email);
 
     res.json({
       message: "Signup successful",
       token,
-      user: { id: result.insertId, name, email, role }
+      user: { id: result.insertId, name, email, role: finalRole }
     });
+
   } catch (err) {
     console.error("Signup verification failed:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
-
 // Login handler
 
 exports.login = async (req, res) => {

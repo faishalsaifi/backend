@@ -35,4 +35,32 @@ router.get('/my', authenticateToken, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+router.get('/all', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        f.feedback_id,
+        f.message,
+        f.rating,
+        u.name
+      FROM feedback f
+      JOIN user u ON f.user_id = u.user_id
+      ORDER BY f.feedback_id DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+router.delete('/delete/:id', authenticateToken, async (req, res) => {
+  try {
+    await db.query("DELETE FROM feedback WHERE feedback_id = ?", [req.params.id]);
+    res.json({ message: "Deleted" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 module.exports = router;
