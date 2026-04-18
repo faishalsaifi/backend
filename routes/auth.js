@@ -1,20 +1,43 @@
-// routes/auth.js
+
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/authMiddleware');
-const bcrypt = require('bcryptjs');
-const db = require('../models/db'); // adjust if db.js is in another location
 
-router.post('/send-otp-signup', authController.sendOtpForSignup);
+// ==============================
+// ✅ Signup with OTP
+// ==============================
+
+// Send OTP to email
+router.post('/send-otp', authController.sendOtpForSignup);
+
+// Verify OTP and create account
 router.post('/verify-otp-signup', authController.verifyOtpSignup);
-router.post('/login', authController.login);
-router.get('/protected', authenticateToken, (req, res) => {
-  res.json({ message: `Welcome ${req.user.email}, this is a protected route!` });
-});
 
+
+// ==============================
+// ✅ Login
+// ==============================
+router.post('/login', authController.login);
+
+
+// ==============================
+// 🔐 Protected Routes
+// ==============================
+
+// Get logged-in user details
 router.get('/me', authenticateToken, authController.getUser);
+
+
+// ==============================
+// 🔑 Forgot Password Flow
+// ==============================
+
+// Send OTP for password reset
 router.post('/forgot-password', authController.forgotPassword);
-router.post('/verify-otp', authController.verifyOtpAndReset);
+
+// Verify OTP and reset password
+router.post('/reset-password', authController.verifyOtpAndReset);
+
 
 module.exports = router;

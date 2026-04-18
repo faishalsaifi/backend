@@ -3,22 +3,36 @@ const router = express.Router();
 const db = require('../models/db');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
+// ==============================
+// 📊 Get dashboard stats
+// ==============================
 router.get('/stats', authenticateToken, async (req, res) => {
   try {
-    const [students] = await db.query('SELECT COUNT(DISTINCT enrollment_no) AS totalStudents FROM result');
-    const [subjects] = await db.query('SELECT COUNT(DISTINCT subject) AS totalSubjects FROM result');
-    const [marks] = await db.query('SELECT COUNT(*) AS marksEntered FROM result WHERE marks IS NOT NULL');
-    const [results] = await db.query('SELECT COUNT(DISTINCT enrollment_no) AS resultsGenerated FROM result');
+    // ✅ Single optimized query
+    const [rows] = await db.query(`
+      SELECT 
+        COUNT(DISTINCT enrollment_no) AS totalStudents,
+        COUNT(DISTINCT subject) AS totalSubjects,
+        COUNT(marks) AS marksEntered,
+        COUNT(DISTINCT enrollment_no) AS resultsGenerated
+      FROM result
+    `);
+
+    const stats = rows[0];
 
     res.json({
-      totalStudents: students[0].totalStudents,
-      totalSubjects: subjects[0].totalSubjects,
-      marksEntered: marks[0].marksEntered,
-      resultsGenerated: results[0].resultsGenerated
+      totalStudents: stats.totalStudents || 0,
+      totalSubjects: stats.totalSubjects || 0,
+      marksEntered: stats.marksEntered || 0,
+      resultsGenerated: stats.resultsGenerated || 0
     });
+
   } catch (err) {
-    console.error('Dashboard stats error:', err);
-    res.status(500).json({ message: 'Failed to fetch dashboard stats' });
+    console.error('❌ Dashboard stats error:', err.message);
+
+    res.status(500).json({
+      message: 'Failed to fetch dashboard stats'
+    });
   }
 });
 
