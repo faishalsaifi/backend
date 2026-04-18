@@ -82,12 +82,11 @@ router.get('/my', authenticateToken, async (req, res) => {
 router.get('/all', authenticateToken, async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT notification.*, user.name 
+      SELECT MIN(notification_id) as notification_id, message, MIN(date_sent) as date_sent
       FROM notification
-      JOIN user ON notification.user_id = user.user_id
-      ORDER BY date_sent DESC
+      GROUP BY message
+      ORDER BY MIN(date_sent) DESC
     `);
-
     res.json(rows);
 
   } catch (err) {
@@ -101,14 +100,23 @@ router.get('/all', authenticateToken, async (req, res) => {
 // ==============================
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const [result] = await db.query(
-      "DELETE FROM notification WHERE notification_id = ?",
+    const [rows] = await db.query(
+      "SELECT message FROM notification WHERE notification_id = ?",
       [req.params.id]
     );
 
-    if (result.affectedRows === 0) {
+    console.log("rows:", rows); // rows is an ARRAY now
+
+    if (!rows || rows.length === 0) {
       return res.status(404).json({ message: "Notification not found" });
     }
+
+    const message = rows[0].message; // 👈 correct way to get message
+
+    await db.query(
+      "DELETE FROM notification WHERE message = ?",
+      [message]
+    );
 
     res.json({ message: "Deleted successfully" });
 
@@ -117,5 +125,4 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
 module.exports = router;
