@@ -2,6 +2,7 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 const router = express.Router();
 
+
 // This is the POST route the frontend form will call
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body; // email entered in form
@@ -13,8 +14,8 @@ router.post('/forgot-password', async (req, res) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'faishalsaifi700@gmail.com', // replace with your Gmail
-      pass: 'mluz drwo ocgg xqvi'     // replace with Gmail App Password
+      user: process.env.EMAIL_USER, 
+      pass: process.env.EMAIL_PASS     
     }
   });
 

@@ -34,14 +34,6 @@ app.use('/api/dashboard',dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/feedback', require('./routes/feedbackRoutes'));
 
-// In server.js, after your existing routes
-
-
-
-// app.post('/api/auth/signup', (req, res) => {
-//   console.log("Signup body:", req.body); // this should now show actual data
-// });
-
 // Start the server on the desired PORT
 const PORT = process.env.PORT || 5000;
 app.listen(PORT,'0.0.0.0', () => {
