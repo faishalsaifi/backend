@@ -42,8 +42,8 @@ router.post('/send-all', authenticateToken, async (req, res) => {
   try {
     // ✅ single query (optimized)
     await db.query(`
-      INSERT INTO notification (user_id, message)
-      SELECT user_id, ?
+      INSERT INTO notification (user_id, message ,date_sent)
+      SELECT user_id, ?, CURDATE()
       FROM user
       WHERE role = 'Student'
     `, [message]);
